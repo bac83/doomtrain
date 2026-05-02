@@ -3,14 +3,16 @@
 // =====================================================
 
 const CONFIG = {
-  // Screen / canvas
-  SCREEN_W: 640,
-  SCREEN_H: 400,
-  // Internal render buffer (Doom-ish chunky pixels, scaled up)
-  RENDER_W: 320,
-  RENDER_H: 200,
-  // HUD takes the bottom strip of the render buffer
-  HUD_H: 44,
+  // Screen / canvas — 2× the original 640×400.
+  SCREEN_W: 1280,
+  SCREEN_H: 800,
+  // Internal render buffer. ~1.78× scale to screen, blit with smoothing on
+  // for soft pixels rather than chunky doom blocks. Higher render res =
+  // sharper textures, less aliasing on sprites.
+  RENDER_W: 720,
+  RENDER_H: 450,
+  // HUD strip in render-buffer space (becomes ~106px on screen).
+  HUD_H: 60,
 };
 
 // Dometrain-flavored palette: dark navy + gold

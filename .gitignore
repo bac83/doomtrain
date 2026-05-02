@@ -4,3 +4,9 @@ node_modules/
 .vscode/
 .idea/
 *.swp
+
+# Playwright MCP scratch
+.playwright-mcp/
+
+# Debug/smoke screenshots at repo root (assets live under src/assets/)
+/*.png

@@ -47,6 +47,14 @@ const Entities = (() => {
             size: 0.4,
             bobPhase: Math.random() * Math.PI * 2
           });
+        } else if (c === 'A') {
+          list.push({
+            type: 'ammo',
+            x: x + 0.5, y: y + 0.5,
+            alive: true,
+            size: 0.4,
+            bobPhase: Math.random() * Math.PI * 2
+          });
         } else if (c === 'X') {
           list.push({
             type: 'nick',
@@ -141,6 +149,17 @@ const Entities = (() => {
           player.hp = Math.min(100, player.hp + 25);
           player.coffee++;
           player.pickupFlash = 0.3;
+          player.pickupFlashColor = '80, 220, 120'; // green for health
+          sfx('pickup');
+        }
+      } else if (e.type === 'ammo') {
+        const dx = player.x - e.x;
+        const dy = player.y - e.y;
+        if (dx*dx + dy*dy < 0.4*0.4) {
+          e.alive = false;
+          player.ammo = Math.min(99, player.ammo + 10);
+          player.pickupFlash = 0.3;
+          player.pickupFlashColor = '120, 180, 255'; // cyan-blue for ammo
           sfx('pickup');
         }
       } else if (e.type === 'nick') {
@@ -194,7 +213,8 @@ const Entities = (() => {
         if (dx*dx + dy*dy < 0.4*0.4) {
           e.alive = false;
           player.keys = (player.keys || 0) + 1;
-          player.pickupFlash = 0.3;
+          player.pickupFlash = 0.4;
+          player.pickupFlashColor = '255, 230, 90'; // bright gold for key
           sfx('pickup');
         }
       } else if (e.type === 'projectile') {

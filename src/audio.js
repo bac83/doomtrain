@@ -131,11 +131,27 @@ function sfx(type) {
 // Started after first user gesture (button click) to satisfy autoplay policies.
 // =====================================================
 const Music = (() => {
-  // 16-step pattern. 0 = rest. Frequencies in Hz.
-  // Bass: A1 minor pulse. Lead: triangle melody hinting "from zero to hero".
-  const BASS = [110, 0, 110, 0, 165, 0, 110, 0, 130, 0, 130, 0, 165, 0, 196, 0];
-  const LEAD = [0, 0, 440, 0, 0, 523, 0, 659, 0, 0, 587, 0, 523, 0, 440, 0];
-  const STEP_MS = 140;
+  // 32-step pattern, faster step. Bass + lead + kick + hat layers for drive.
+  // Lead arc: A4-C5-E5-A5-G5-E5-D5-C5 — heroic upbeat motif.
+  const BASS = [
+    110, 0, 110, 110, 165, 0, 110, 0, 130, 0, 130, 130, 165, 0, 196, 0,
+    110, 0, 110, 110, 165, 0, 110, 0, 130, 0, 196, 0, 220, 0, 165, 0,
+  ];
+  const LEAD = [
+    440, 0, 523, 0, 659, 0, 880, 0, 784, 0, 659, 0, 587, 0, 523, 0,
+    440, 0, 523, 659, 880, 0, 784, 659, 587, 0, 659, 0, 523, 0, 440, 0,
+  ];
+  // Kick on beats 1 + 3 of every group of 4.
+  const KICK = [
+    1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+    1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0,
+  ];
+  // Hi-hat off-beats for drive.
+  const HAT = [
+    0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+    0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1,
+  ];
+  const STEP_MS = 100;
 
   let started = false;
   let intervalId = null;
@@ -156,28 +172,61 @@ const Music = (() => {
       const master = ensureMaster(ctx);
       const t = ctx.currentTime;
 
-      const bass = BASS[step % BASS.length];
+      const idx = step % BASS.length;
+
+      const bass = BASS[idx];
       if (bass > 0) {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
         o.connect(g); g.connect(master);
         o.type = 'square';
         o.frequency.setValueAtTime(bass, t);
-        g.gain.setValueAtTime(0.06, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-        o.start(t); o.stop(t + 0.20);
+        g.gain.setValueAtTime(0.07, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        o.start(t); o.stop(t + 0.14);
       }
 
-      const lead = LEAD[step % LEAD.length];
+      const lead = LEAD[idx];
       if (lead > 0) {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
         o.connect(g); g.connect(master);
         o.type = 'triangle';
         o.frequency.setValueAtTime(lead, t);
-        g.gain.setValueAtTime(0.05, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-        o.start(t); o.stop(t + 0.18);
+        g.gain.setValueAtTime(0.06, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+        o.start(t); o.stop(t + 0.15);
+      }
+
+      // Kick — short low-freq sine sweep
+      if (KICK[idx]) {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(master);
+        o.type = 'sine';
+        o.frequency.setValueAtTime(120, t);
+        o.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+        o.start(t); o.stop(t + 0.11);
+      }
+
+      // Hi-hat — short noise burst via highpass-filtered buffer
+      if (HAT[idx]) {
+        const bufSize = Math.floor(ctx.sampleRate * 0.03);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const hp = ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 6000;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.04, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        src.connect(hp); hp.connect(g); g.connect(master);
+        src.start(t); src.stop(t + 0.05);
       }
 
       step++;

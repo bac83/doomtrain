@@ -19,6 +19,7 @@ const Player = (() => {
     bobTime: 0,
     hurtFlash: 0,
     pickupFlash: 0,
+    pickupFlashColor: '245, 184, 0',
     shootCooldown: 0,
     muzzleFlash: 0,
   };
@@ -36,6 +37,7 @@ const Player = (() => {
     state.bobTime = 0;
     state.hurtFlash = 0;
     state.pickupFlash = 0;
+    state.pickupFlashColor = '245, 184, 0';
     state.shootCooldown = 0;
     state.muzzleFlash = 0;
   }

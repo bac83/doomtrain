@@ -15,7 +15,7 @@ const Input = (() => {
   let onShoot = () => {};
 
   // Touch state
-  let leftTouchId = null, leftStartX = 0, leftStartY = 0;
+  let leftTouchId = null, leftStartX = 0, leftStartY = 0, leftCurX = 0, leftCurY = 0;
   let rightTouchId = null, rightLastX = 0, rightStartX = 0, rightStartY = 0, rightStartTime = 0, rightMoved = false;
 
   function clearJoystickKeys() {
@@ -76,6 +76,7 @@ const Input = (() => {
       if (isLeft && leftTouchId === null) {
         leftTouchId = t.identifier;
         leftStartX = p.x; leftStartY = p.y;
+        leftCurX = p.x; leftCurY = p.y;
       } else if (!isLeft && rightTouchId === null) {
         rightTouchId = t.identifier;
         rightStartX = p.x; rightStartY = p.y;
@@ -91,6 +92,7 @@ const Input = (() => {
     for (const t of e.changedTouches) {
       const p = canvasSpace(t);
       if (t.identifier === leftTouchId) {
+        leftCurX = p.x; leftCurY = p.y;
         const dx = p.x - leftStartX;
         const dy = p.y - leftStartY;
         const dead = 12;
@@ -129,5 +131,10 @@ const Input = (() => {
   function isMouseLocked() { return mouseLocked; }
   function unlockMouse() { document.exitPointerLock(); }
 
-  return { keys, init, isMouseLocked, unlockMouse };
+  function getJoystick() {
+    if (leftTouchId === null) return null;
+    return { startX: leftStartX, startY: leftStartY, curX: leftCurX, curY: leftCurY };
+  }
+
+  return { keys, init, isMouseLocked, unlockMouse, getJoystick };
 })();

@@ -210,7 +210,11 @@ const Renderer = (() => {
 
   function blit(ctx) {
     bctx.putImageData(imgData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
+    // Smoothed blit — softens the upscale so the world looks higher-fidelity
+    // rather than chunky-pixel Doom. HUD text + portrait are drawn crisp on
+    // top of the scaled buffer in hud.js, so they stay sharp.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(buffer, 0, 0, CONFIG.SCREEN_W, CONFIG.SCREEN_H);
   }
 

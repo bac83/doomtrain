@@ -86,6 +86,16 @@
     }
   }
 
+  const NICK_QUOTES = [
+    'Keep coding!',
+    'From Zero to Hero!',
+    'Ship it!',
+    'Refactor with confidence.',
+    'You crushed the boilerplate.',
+    'Clean code wins.',
+    'Onward to the next course!',
+  ];
+
   function finishRun() {
     gameState = 'won';
     Save.clear();
@@ -94,6 +104,9 @@
     document.getElementById('statCoffee').textContent = totalCoffee;
     const elapsed = Math.floor((performance.now() - runStartTime) / 1000);
     document.getElementById('statTime').textContent = elapsed;
+    const q = NICK_QUOTES[Math.floor(Math.random() * NICK_QUOTES.length)];
+    const quoteEl = document.getElementById('quote');
+    if (quoteEl) quoteEl.textContent = q;
     endScreen.style.display = 'flex';
   }
 
@@ -114,7 +127,9 @@
   function pauseGame() {
     if (gameState !== 'playing') return;
     gameState = 'paused';
-    Input.unlockMouse();
+    // Only emit unlock if still locked — avoids redundant pointerlockchange round-trip
+    // when ESC already unlocked the cursor (browser-native behavior).
+    if (Input.isMouseLocked()) Input.unlockMouse();
     pauseScreen.style.display = 'flex';
   }
 
@@ -229,11 +244,12 @@
   // ---- Loop ----
 
   function drawMinimap(ctx) {
-    const px = 5;
+    const S = CONFIG.SCREEN_W / 640;
+    const px = Math.max(4, Math.round(5 * S));
     const w = MAP_W * px;
     const h = MAP_H * px;
-    const ox = CONFIG.SCREEN_W - w - 12;
-    const oy = 12;
+    const ox = CONFIG.SCREEN_W - w - Math.round(12 * S);
+    const oy = Math.round(12 * S);
 
     ctx.fillStyle = 'rgba(10, 14, 26, 0.85)';
     ctx.fillRect(ox - 3, oy - 3, w + 6, h + 6);
@@ -265,9 +281,12 @@
       else if (e.type === 'key') col = '#f5b800';
       else if (e.type === 'nick') col = '#ffd84a';
       else if (e.type === 'boss') col = '#dc3232';
+      else if (e.type === 'ammo') col = '#ffe060';
+      else if (e.type === 'projectile') col = '#cc55ff';
       if (!col) continue;
       ctx.fillStyle = col;
-      ctx.fillRect(ox + e.x * px - 1, oy + e.y * px - 1, 3, 3);
+      const sz = e.type === 'projectile' ? 2 : 3;
+      ctx.fillRect(ox + e.x * px - 1, oy + e.y * px - 1, sz, sz);
     }
 
     const ps = Player.state;
@@ -304,7 +323,7 @@
       ctx.fillRect(0, 0, CONFIG.SCREEN_W, CONFIG.SCREEN_H);
     }
     if (Player.state.pickupFlash > 0) {
-      ctx.fillStyle = `rgba(245, 184, 0, ${Player.state.pickupFlash * 0.3})`;
+      ctx.fillStyle = `rgba(${Player.state.pickupFlashColor}, ${Player.state.pickupFlash * 0.35})`;
       ctx.fillRect(0, 0, CONFIG.SCREEN_W, CONFIG.SCREEN_H);
     }
 
@@ -312,6 +331,35 @@
     HUD.draw(ctx, Player.state);
 
     if (showMinimap) drawMinimap(ctx);
+
+    // Touch joystick visualization
+    const js = Input.getJoystick && Input.getJoystick();
+    if (js && gameState === 'playing') {
+      const baseR = 60;
+      const knobR = 26;
+      const dx = js.curX - js.startX;
+      const dy = js.curY - js.startY;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const clamp = Math.min(len, baseR);
+      const kx = len > 0 ? js.startX + dx / len * clamp : js.startX;
+      const ky = len > 0 ? js.startY + dy / len * clamp : js.startY;
+
+      ctx.beginPath();
+      ctx.arc(js.startX, js.startY, baseR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(245, 184, 0, 0.12)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(245, 184, 0, 0.55)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(kx, ky, knobR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(245, 184, 0, 0.45)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(245, 184, 0, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
 
     const grd = ctx.createRadialGradient(
       CONFIG.SCREEN_W/2, CONFIG.SCREEN_H/2, CONFIG.SCREEN_W*0.3,
