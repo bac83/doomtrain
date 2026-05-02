@@ -1,11 +1,13 @@
 // =====================================================
-// Weapon — first-person "Debugger Gun" + crosshair + muzzle flash
+// Weapon — first-person sprites, crosshair, muzzle flash, registry
 // =====================================================
+//
+// Weapon.list is the canonical registry. Player.state.currentWeapon
+// indexes into it. Each weapon defines fire behavior + sprite.
 
 const Weapon = (() => {
 
-  // Gun sprite as a pixel grid. Easy to redesign — just rewrite this array.
-  // Color codes: X=outline, G=gold, Y=highlight, D=dark detail, space=transparent.
+  // Pistol — gold "Debugger Gun".
   const GUN_PIXELS = [
     "      XXXXXXXX      ",
     "      XGGGGGGX      ",
@@ -28,12 +30,43 @@ const Weapon = (() => {
     "XGYY            YYGX",
     "XGGXXXXXXXXXXXXXXGGX"
   ];
+
+  // Hammer — wooden-shafted "Refactor Hammer" with gold head.
+  const HAMMER_PIXELS = [
+    "                    ",
+    "                    ",
+    "    XXXXXXXXXXXX    ",
+    "    XGGGGGGGGGGX    ",
+    "    XGYYYYYYYYDX    ",
+    "    XGYYYYYYYYDX    ",
+    "    XGYYYYYYYYDX    ",
+    "    XGYYYYYYYYDX    ",
+    "    XGGGGGGGGGGX    ",
+    "    XXXXXXXXXXXX    ",
+    "         XBX        ",
+    "         XBX        ",
+    "         XBX        ",
+    "         XBX        ",
+    "         XBX        ",
+    "        XBBBX       ",
+    "       XBBBBBX      ",
+    "       XBBBBBX      ",
+    "       XBBBBBX      ",
+    "       XXXXXXX      "
+  ];
+
   const COLOR_MAP = {
     'X': '#000000',
-    'G': '#f5b800',  // gold
-    'Y': '#ffd84a',  // gold highlight
-    'D': '#0a0e1a',  // dark navy
+    'G': '#f5b800',
+    'Y': '#ffd84a',
+    'D': '#0a0e1a',
+    'B': '#5a3818',
   };
+
+  const list = [
+    { name: 'PISTOL',  ammoType: 'bullets', fireRate: 0.35, damage: 1, range: 12,  sound: 'shoot',       muzzle: 1.0, sprite: GUN_PIXELS },
+    { name: 'HAMMER',  ammoType: null,      fireRate: 0.20, damage: 3, range: 1.6, sound: 'shootHammer', muzzle: 0.0, sprite: HAMMER_PIXELS },
+  ];
 
   function draw(ctx, player) {
     const W = CONFIG.SCREEN_W, H = CONFIG.SCREEN_H;
@@ -46,7 +79,6 @@ const Weapon = (() => {
 
     ctx.imageSmoothingEnabled = false;
 
-    // Muzzle flash
     if (player.muzzleFlash > 0) {
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -58,9 +90,9 @@ const Weapon = (() => {
       ctx.fill();
     }
 
-    // Gun
-    for (let r = 0; r < GUN_PIXELS.length; r++) {
-      const row = GUN_PIXELS[r];
+    const sprite = list[player.currentWeapon].sprite;
+    for (let r = 0; r < sprite.length; r++) {
+      const row = sprite[r];
       for (let c = 0; c < row.length; c++) {
         const ch = row[c];
         if (ch === ' ') continue;
@@ -69,7 +101,7 @@ const Weapon = (() => {
       }
     }
 
-    // Crosshair (4 ticks)
+    // Crosshair
     ctx.fillStyle = '#f5b800';
     ctx.fillRect(W/2 - 1, H/2 - 100 - 8, 2, 6);
     ctx.fillRect(W/2 - 1, H/2 - 100 + 2, 2, 6);
@@ -77,5 +109,5 @@ const Weapon = (() => {
     ctx.fillRect(W/2 + 2, H/2 - 100 - 1, 6, 2);
   }
 
-  return { draw };
+  return { list, draw };
 })();

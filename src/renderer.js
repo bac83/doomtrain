@@ -23,6 +23,8 @@ const Renderer = (() => {
     bctx = buffer.getContext('2d');
     imgData = bctx.createImageData(CONFIG.RENDER_W, CONFIG.RENDER_H);
     pixels = imgData.data;
+    Textures.init();
+    Sprites.init();
   }
 
   function setPixel(x, y, r, g, b) {
@@ -75,7 +77,7 @@ const Renderer = (() => {
           sideDistY += deltaDistY; mapY += stepY; side = 1;
         }
         const c = mapAt(mapX, mapY);
-        if (c === '1' || c === '2' || c === 'E') { hit = true; wallType = c; }
+        if (c === '1' || c === '2' || c === 'E' || c === 'D') { hit = true; wallType = c; }
       }
 
       let perpDist;
@@ -86,43 +88,31 @@ const Renderer = (() => {
       zBuffer[x] = correctedDist;
 
       const lineHeight = Math.floor(RH / correctedDist);
-      let drawStart = -lineHeight / 2 + RH / 2;
-      let drawEnd = lineHeight / 2 + RH / 2;
+      const drawStartUnclipped = -lineHeight / 2 + RH / 2;
+      const drawEndUnclipped = lineHeight / 2 + RH / 2;
+      let drawStart = drawStartUnclipped;
+      let drawEnd = drawEndUnclipped;
       if (drawStart < 0) drawStart = 0;
       if (drawEnd >= RH) drawEnd = RH - 1;
 
-      // Wall hit position for vertical detail stripes
+      // Wall hit U coord (texture column 0..1)
       let wallHitCoord;
       if (side === 0) wallHitCoord = player.y + perpDist * rayDirY;
       else wallHitCoord = player.x + perpDist * rayDirX;
       wallHitCoord -= Math.floor(wallHitCoord);
 
-      // Pick base color by wall type
-      let baseColor;
-      if (wallType === '2') baseColor = PALETTE.wallAccent;
-      else if (wallType === 'E') baseColor = PALETTE.exitWall;
-      else baseColor = side === 0 ? PALETTE.wallLight : PALETTE.wallDark;
-
       const fog = Math.max(0.15, 1 - correctedDist / 16);
-      let r = Math.floor(baseColor[0] * fog);
-      let g = Math.floor(baseColor[1] * fog);
-      let b = Math.floor(baseColor[2] * fog);
-
-      // "Panel line" details on walls
-      const stripe = (wallHitCoord > 0.48 && wallHitCoord < 0.52) ||
-                     (wallHitCoord > 0.0 && wallHitCoord < 0.04) ||
-                     (wallHitCoord > 0.96 && wallHitCoord < 1.0);
+      const sideMul = side === 1 ? 0.75 : 1.0;
+      const lh = lineHeight > 0 ? lineHeight : 1;
 
       for (let y = Math.floor(drawStart); y <= Math.floor(drawEnd); y++) {
-        const yFrac = (y - drawStart) / (drawEnd - drawStart);
-        let rr = r, gg = g, bb = b;
-        if (stripe) { rr = Math.floor(rr * 0.5); gg = Math.floor(gg * 0.5); bb = Math.floor(bb * 0.5); }
-        if (y % 2 === 0) { rr = Math.floor(rr * 0.92); gg = Math.floor(gg * 0.92); bb = Math.floor(bb * 0.92); }
-        // Type-2 walls get gold trim
-        if (wallType === '2' && (yFrac < 0.1 || yFrac > 0.9)) {
-          rr = Math.floor(245 * fog); gg = Math.floor(184 * fog); bb = 0;
-        }
-        setPixel(x, y, rr, gg, bb);
+        const vFrac = (y - drawStartUnclipped) / lh;
+        const tex = Textures.sample(wallType, wallHitCoord, vFrac);
+        let rr = tex[0] * fog * sideMul;
+        let gg = tex[1] * fog * sideMul;
+        let bb = tex[2] * fog * sideMul;
+        if (y % 2 === 0) { rr *= 0.92; gg *= 0.92; bb *= 0.92; }
+        setPixel(x, y, rr | 0, gg | 0, bb | 0);
       }
     }
   }
@@ -143,11 +133,13 @@ const Renderer = (() => {
       const dx = e.x - player.x;
       const dy = e.y - player.y;
 
-      // Rotate into camera space
-      const cosA = Math.cos(-player.dir);
-      const sinA = Math.sin(-player.dir);
-      const transX = dx * cosA - dy * sinA;
-      const transY = dx * sinA + dy * cosA;
+      // Rotate into camera space.
+      // Forward axis = (cos(dir), sin(dir)); right axis = (-sin(dir), cos(dir)).
+      // transY = forward depth, transX = right offset.
+      const cosA = Math.cos(player.dir);
+      const sinA = Math.sin(player.dir);
+      const transY = dx * cosA + dy * sinA;
+      const transX = -dx * sinA + dy * cosA;
       if (transY < 0.1) continue;
 
       const RW = CONFIG.RENDER_W, RH = CONFIG.RENDER_H;
@@ -168,23 +160,34 @@ const Renderer = (() => {
   }
 
   function drawSprite(ent, sx, sy, sw, sh, dist) {
+    const data = Sprites.getData(ent.type);
     const fog = Math.max(0.2, 1 - dist / 14);
     const RW = CONFIG.RENDER_W, RH = CONFIG.RENDER_H;
+    const SZ = Sprites.SIZE;
+    const flash = ent.hitFlash > 0;
     for (let x = 0; x < sw; x++) {
       const px = sx + x;
       if (px < 0 || px >= RW) continue;
       if (zBuffer[px] < dist) continue;
-      const u = x / sw;
+      let tu = (x / sw * SZ) | 0;
+      if (tu < 0) tu = 0; else if (tu >= SZ) tu = SZ - 1;
       for (let y = 0; y < sh; y++) {
         const py = sy + y;
         if (py < 0 || py >= RH) continue;
-        const v = y / sh;
-        const c = spritePixel(ent, u, v);
-        if (!c || c[3] === 0) continue;
-        setPixel(px, py,
-          Math.floor(c[0] * fog),
-          Math.floor(c[1] * fog),
-          Math.floor(c[2] * fog));
+        let tv = (y / sh * SZ) | 0;
+        if (tv < 0) tv = 0; else if (tv >= SZ) tv = SZ - 1;
+        let r, g, b;
+        if (data) {
+          const idx = (tv * SZ + tu) * 4;
+          if (data[idx + 3] === 0) continue;
+          r = data[idx]; g = data[idx + 1]; b = data[idx + 2];
+        } else {
+          const c = spritePixel(ent, tu / SZ, tv / SZ);
+          if (!c || c[3] === 0) continue;
+          r = c[0]; g = c[1]; b = c[2];
+        }
+        if (flash) { r = 255; g = 255; b = 255; }
+        setPixel(px, py, (r * fog) | 0, (g * fog) | 0, (b * fog) | 0);
       }
     }
   }

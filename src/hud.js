@@ -38,17 +38,34 @@ const HUD = (() => {
     ctx.font = 'bold 28px "Courier New", monospace';
     ctx.fillText(String(player.kills).padStart(2, '0'), 350, yMid + 8);
 
-    // Center: Nick portrait
-    drawPortrait(ctx, 440, yMid + 8, player);
+    // KEYS held
+    ctx.font = 'bold 18px "Courier New", monospace';
+    ctx.fillStyle = '#f5b800';
+    ctx.fillText('KEY', 395, yMid + 8);
+    ctx.fillStyle = (player.keys || 0) > 0 ? '#f5b800' : '#666';
+    ctx.font = 'bold 28px "Courier New", monospace';
+    ctx.fillText(String(player.keys || 0), 440, yMid + 8);
 
-    // Right: episode label
+    // Portrait
+    drawPortrait(ctx, 490, yMid + 8, player);
+
+    // Right: weapon + episode
+    const weaponName = (typeof Weapon !== 'undefined' && Weapon.list[player.currentWeapon])
+      ? Weapon.list[player.currentWeapon].name
+      : 'PISTOL';
+    const levelId = (typeof getCurrentLevel === 'function')
+      ? getCurrentLevel().id.toUpperCase()
+      : 'E1M1';
+
     ctx.font = 'bold 14px "Courier New", monospace';
     ctx.fillStyle = '#f5b800';
     ctx.textAlign = 'right';
-    ctx.fillText('E1M1', W - 16, yMid - 2);
-    ctx.font = '12px "Courier New", monospace';
+    ctx.fillText(levelId, W - 16, yMid - 8);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(weaponName, W - 16, yMid + 8);
+    ctx.font = '11px "Courier New", monospace';
     ctx.fillStyle = '#aaa';
-    ctx.fillText('FROM ZERO TO HERO', W - 16, yMid + 18);
+    ctx.fillText('FROM ZERO TO HERO', W - 16, yMid + 24);
     ctx.textAlign = 'left';
   }
 

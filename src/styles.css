@@ -20,7 +20,7 @@ html, body {
   box-shadow: 0 0 40px rgba(245, 184, 0, 0.4);
   cursor: crosshair;
 }
-#overlay, #endScreen {
+#overlay, #endScreen, #pauseScreen, #levelScreen {
   position: fixed; inset: 0;
   background: linear-gradient(180deg, #0a0e1a 0%, #1a1f3a 100%);
   display: flex; align-items: center; justify-content: center;
@@ -31,6 +31,17 @@ html, body {
 }
 #endScreen {
   background: linear-gradient(180deg, #0a0e1a 0%, #1a3a1f 100%);
+}
+#pauseScreen {
+  background: rgba(10, 14, 26, 0.85);
+}
+#pauseTitle, #levelTitle {
+  font-size: 56px;
+  color: #f5b800;
+  text-shadow: 4px 4px 0 #000, 0 0 20px rgba(245,184,0,0.6);
+  letter-spacing: 6px;
+  margin-bottom: 20px;
+  font-weight: 900;
 }
 #overlay.hidden { display: none; }
 #title, #endTitle {
@@ -110,3 +121,20 @@ button:hover {
   font-size: 13px;
   letter-spacing: 2px;
 }
+#pauseBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 50;
+  background: rgba(10, 14, 26, 0.7);
+  color: #f5b800;
+  border: 2px solid #f5b800;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: none;
+}
+#pauseBtn.visible { display: block; }
