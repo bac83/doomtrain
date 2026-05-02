@@ -10,3 +10,7 @@ node_modules/
 
 # Debug/smoke screenshots at repo root (assets live under src/assets/)
 /*.png
+
+# Local Claude Code instructions (kept out of repo history)
+CLAUDE.md
+.claude/
