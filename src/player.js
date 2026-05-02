@@ -7,8 +7,8 @@ const Player = (() => {
     x: PLAYER_START.x,
     y: PLAYER_START.y,
     dir: PLAYER_START.dir,
-    fov: Math.PI / 3,
-    speed: 3.0,
+    fov: CONFIG.TUNING.PLAYER_FOV,
+    speed: CONFIG.TUNING.PLAYER_SPEED,
     rotSpeed: 2.4,
     hp: 100,
     ammo: 30,
@@ -44,7 +44,7 @@ const Player = (() => {
 
   function update(dt, keys) {
     let mvX = 0, mvY = 0;
-    const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? state.speed * 1.6 : state.speed;
+    const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? state.speed * CONFIG.TUNING.PLAYER_RUN_MUL : state.speed;
 
     if (keys['KeyW']) { mvX += Math.cos(state.dir);             mvY += Math.sin(state.dir); }
     if (keys['KeyS']) { mvX -= Math.cos(state.dir);             mvY -= Math.sin(state.dir); }

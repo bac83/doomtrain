@@ -15,6 +15,26 @@
 //   2. Add an update branch in update().
 //   3. Add a sprite in sprites.js.
 
+// Pickup config — collision radius, HUD flash params, and effect to apply.
+// Nick (touch-to-win) is intentionally separate: different radius, no flash.
+const PICKUP_FX = {
+  coffee: { rad: 0.4, flash: 0.3, color: '80, 220, 120',  apply: p => { p.hp = Math.min(100, p.hp + CONFIG.TUNING.COFFEE_HEAL); p.coffee++; } },
+  ammo:   { rad: 0.4, flash: 0.3, color: '120, 180, 255', apply: p => { p.ammo = Math.min(99, p.ammo + 10); } },
+  key:    { rad: 0.4, flash: 0.4, color: '255, 230, 90',  apply: p => { p.keys = (p.keys || 0) + 1; } },
+};
+
+// Per-map-char spawn template. Spread into entity at spawn time; behavior
+// still lives in update(). `_bob` flag adds a random bob phase on spawn.
+const ENTITY_DEFS = {
+  N: { type: 'bug',           size: 0.5, hp: 2,  attackCooldown: 0.8, awake: false, hitFlash: 0 },
+  C: { type: 'coffee',        size: 0.4, _bob: true },
+  A: { type: 'ammo',          size: 0.4, _bob: true },
+  X: { type: 'nick',          size: 0.6 },
+  M: { type: 'mergeconflict', size: 0.6, hp: 3,  attackCooldown: 1.0, awake: false, hitFlash: 0 },
+  K: { type: 'key',           size: 0.3, _bob: true },
+  B: { type: 'boss',          size: 1.4, hp: 25, attackCooldown: 1.5, meleeCool: 0.5, hitFlash: 0 },
+};
+
 const Entities = (() => {
   const list = [];
   let bossWinTriggered = false;
@@ -28,70 +48,12 @@ const Entities = (() => {
     frameCount = 0;
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
-        const c = MAP[y][x];
-        if (c === 'N') {
-          list.push({
-            type: 'bug',
-            x: x + 0.5, y: y + 0.5,
-            hp: 2, alive: true,
-            attackCooldown: 0.8,
-            awake: false,
-            hitFlash: 0,
-            size: 0.5
-          });
-        } else if (c === 'C') {
-          list.push({
-            type: 'coffee',
-            x: x + 0.5, y: y + 0.5,
-            alive: true,
-            size: 0.4,
-            bobPhase: Math.random() * Math.PI * 2
-          });
-        } else if (c === 'A') {
-          list.push({
-            type: 'ammo',
-            x: x + 0.5, y: y + 0.5,
-            alive: true,
-            size: 0.4,
-            bobPhase: Math.random() * Math.PI * 2
-          });
-        } else if (c === 'X') {
-          list.push({
-            type: 'nick',
-            x: x + 0.5, y: y + 0.5,
-            alive: true,
-            size: 0.6
-          });
-        } else if (c === 'M') {
-          list.push({
-            type: 'mergeconflict',
-            x: x + 0.5, y: y + 0.5,
-            hp: 3, alive: true,
-            attackCooldown: 1.0,
-            awake: false,
-            hitFlash: 0,
-            size: 0.6
-          });
-        } else if (c === 'K') {
-          list.push({
-            type: 'key',
-            x: x + 0.5, y: y + 0.5,
-            alive: true,
-            size: 0.3,
-            bobPhase: Math.random() * Math.PI * 2
-          });
-        } else if (c === 'B') {
-          list.push({
-            type: 'boss',
-            x: x + 0.5, y: y + 0.5,
-            hp: 25, alive: true,
-            attackCooldown: 1.5,
-            meleeCool: 0.5,
-            hitFlash: 0,
-            size: 1.4
-          });
-          bossEverSpawned = true;
-        }
+        const def = ENTITY_DEFS[MAP[y][x]];
+        if (!def) continue;
+        const ent = { ...def, x: x + 0.5, y: y + 0.5, alive: true };
+        if (def._bob) { ent.bobPhase = Math.random() * Math.PI * 2; delete ent._bob; }
+        list.push(ent);
+        if (def.type === 'boss') bossEverSpawned = true;
       }
     }
   }
@@ -101,7 +63,7 @@ const Entities = (() => {
   function rayHitsWall(x, y, ang, maxDist) {
     const dx = Math.cos(ang);
     const dy = Math.sin(ang);
-    const step = 0.05;
+    const step = CONFIG.TUNING.RAY_STEP;
     let d = 0;
     while (d < maxDist) {
       d += step;
@@ -129,37 +91,26 @@ const Entities = (() => {
         if (sees) e.awake = true;
         if (!e.awake) continue;
 
-        if (sees && dist > 2.4) {
-          const speed = 0.35;
+        if (sees && dist > CONFIG.TUNING.BUG_APPROACH_DIST) {
+          const speed = CONFIG.TUNING.BUG_SPEED;
           const nx = e.x + Math.cos(ang) * speed * dt;
           const ny = e.y + Math.sin(ang) * speed * dt;
           if (!isWall(Math.floor(nx), Math.floor(e.y))) e.x = nx;
           if (!isWall(Math.floor(e.x), Math.floor(ny))) e.y = ny;
         }
         e.attackCooldown -= dt;
-        if (sees && dist < 2.6 && e.attackCooldown <= 0) {
-          onHurt(8);
-          e.attackCooldown = 1.2;
+        if (sees && dist < CONFIG.TUNING.BUG_ATTACK_RANGE && e.attackCooldown <= 0) {
+          onHurt(CONFIG.TUNING.BUG_DAMAGE);
+          e.attackCooldown = CONFIG.TUNING.BUG_ATTACK_COOLDOWN;
         }
-      } else if (e.type === 'coffee') {
-        const dx = player.x - e.x;
-        const dy = player.y - e.y;
-        if (dx*dx + dy*dy < 0.4*0.4) {
+      } else if (PICKUP_FX[e.type]) {
+        const fx = PICKUP_FX[e.type];
+        const dx = player.x - e.x, dy = player.y - e.y;
+        if (dx*dx + dy*dy < fx.rad * fx.rad) {
           e.alive = false;
-          player.hp = Math.min(100, player.hp + 25);
-          player.coffee++;
-          player.pickupFlash = 0.3;
-          player.pickupFlashColor = '80, 220, 120'; // green for health
-          sfx('pickup');
-        }
-      } else if (e.type === 'ammo') {
-        const dx = player.x - e.x;
-        const dy = player.y - e.y;
-        if (dx*dx + dy*dy < 0.4*0.4) {
-          e.alive = false;
-          player.ammo = Math.min(99, player.ammo + 10);
-          player.pickupFlash = 0.3;
-          player.pickupFlashColor = '120, 180, 255'; // cyan-blue for ammo
+          fx.apply(player);
+          player.pickupFlash = fx.flash;
+          player.pickupFlashColor = fx.color;
           sfx('pickup');
         }
       } else if (e.type === 'nick') {
@@ -206,16 +157,6 @@ const Entities = (() => {
             e.attackCooldown = 1.5;
             sfx('merge');
           }
-        }
-      } else if (e.type === 'key') {
-        const dx = player.x - e.x;
-        const dy = player.y - e.y;
-        if (dx*dx + dy*dy < 0.4*0.4) {
-          e.alive = false;
-          player.keys = (player.keys || 0) + 1;
-          player.pickupFlash = 0.4;
-          player.pickupFlashColor = '255, 230, 90'; // bright gold for key
-          sfx('pickup');
         }
       } else if (e.type === 'projectile') {
         e.x += e.dx * dt;

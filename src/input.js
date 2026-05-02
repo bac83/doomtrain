@@ -47,7 +47,7 @@ const Input = (() => {
       mouseLocked = document.pointerLockElement === canvas;
     });
     document.addEventListener('mousemove', e => {
-      if (mouseLocked) Player.state.dir += e.movementX * 0.003;
+      if (mouseLocked) Player.state.dir += e.movementX * CONFIG.TUNING.MOUSE_SENS;
     });
     document.addEventListener('mousedown', () => {
       if (mouseLocked) onShoot();

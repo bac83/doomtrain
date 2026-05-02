@@ -101,8 +101,8 @@ const Renderer = (() => {
       else wallHitCoord = player.x + perpDist * rayDirX;
       wallHitCoord -= Math.floor(wallHitCoord);
 
-      const fog = Math.max(0.15, 1 - correctedDist / 16);
-      const sideMul = side === 1 ? 0.75 : 1.0;
+      const fog = Math.max(CONFIG.TUNING.FOG_FLOOR, 1 - correctedDist / CONFIG.TUNING.FOG_DIST);
+      const sideMul = side === 1 ? CONFIG.TUNING.SIDE_SHADE : 1.0;
       const lh = lineHeight > 0 ? lineHeight : 1;
 
       for (let y = Math.floor(drawStart); y <= Math.floor(drawEnd); y++) {

@@ -136,7 +136,8 @@ function bugPixel(u, v, ent) {
 // ---------------------------------------------
 // Coffee cup — Dometrain mug: navy body, gold band, gold "D" + steam
 // ---------------------------------------------
-function coffeePixel(u, v) {
+function coffeePixel(u, v, t) {
+  if (t === undefined) t = performance.now() * 0.004;
   const cupTop = 0.3, cupBottom = 0.88;
   const inCupY = v > cupTop && v < cupBottom;
   const cupLeft = 0.28 + (v - cupTop) * 0.04;
@@ -167,8 +168,7 @@ function coffeePixel(u, v) {
   const inGoldBandTop = inCup && v > cupTop + 0.05 && v < cupTop + 0.08;
   const inGoldBandBot = inCup && v > cupBottom - 0.06 && v < cupBottom - 0.03;
 
-  // Steam (animated wave)
-  const t = performance.now() * 0.004;
+  // Steam (animated wave) — `t` is passed in (or live default) so cache can pre-bake frames.
   const steamX1 = 0.5 + Math.sin(v * 22 + t) * 0.05;
   const steamX2 = 0.42 + Math.sin(v * 18 + t * 1.3 + 1) * 0.04;
   const steamX3 = 0.58 + Math.sin(v * 18 + t * 0.9 + 2) * 0.04;
@@ -532,6 +532,12 @@ const Sprites = (() => {
   const SIZE = 96;
   const cache = {};
 
+  // Coffee steam: original code used `t = performance.now() * 0.004` and
+  // sin(v*22 + t). Sine period is 2π in t → ~1571ms wall-clock. Bake N frames
+  // covering that period so the steam animates without per-pixel sampling.
+  const COFFEE_FRAMES = 8;
+  const COFFEE_PERIOD_MS = (2 * Math.PI) / 0.004;
+
   function buildOne(type) {
     const data = new Uint8ClampedArray(SIZE * SIZE * 4);
     const ent = { type, hitFlash: 0, bobPhase: 0 };
@@ -549,10 +555,30 @@ const Sprites = (() => {
     cache[type] = data;
   }
 
+  function buildCoffeeFrames() {
+    const frames = [];
+    for (let f = 0; f < COFFEE_FRAMES; f++) {
+      const t = (f / COFFEE_FRAMES) * Math.PI * 2;
+      const data = new Uint8ClampedArray(SIZE * SIZE * 4);
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const c = coffeePixel(x / SIZE, y / SIZE, t);
+          if (!c || c[3] === 0) continue;
+          const i = (y * SIZE + x) * 4;
+          data[i]     = c[0];
+          data[i + 1] = c[1];
+          data[i + 2] = c[2];
+          data[i + 3] = c[3];
+        }
+      }
+      frames.push(data);
+    }
+    cache.coffee = frames;
+  }
+
   function init() {
     buildOne('bug');
-    // 'coffee' intentionally skipped: steam wave reads performance.now(),
-    // so it must sample live each frame.
+    buildCoffeeFrames();
     buildOne('ammo');
     buildOne('nick');
     buildOne('mergeconflict');
@@ -562,6 +588,12 @@ const Sprites = (() => {
   }
 
   function getData(type) {
+    if (type === 'coffee') {
+      const frames = cache.coffee;
+      if (!frames) return null;
+      const idx = Math.floor((performance.now() % COFFEE_PERIOD_MS) / COFFEE_PERIOD_MS * frames.length) % frames.length;
+      return frames[idx];
+    }
     return cache[type] || null;
   }
 

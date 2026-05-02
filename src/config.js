@@ -13,6 +13,24 @@ const CONFIG = {
   RENDER_H: 450,
   // HUD strip in render-buffer space (becomes ~106px on screen).
   HUD_H: 60,
+
+  // Game-feel knobs (formerly scattered across modules).
+  TUNING: {
+    PLAYER_SPEED: 3.0,
+    PLAYER_RUN_MUL: 1.6,
+    PLAYER_FOV: Math.PI / 3,
+    MOUSE_SENS: 0.003,
+    BUG_SPEED: 0.35,
+    BUG_DAMAGE: 8,
+    BUG_ATTACK_RANGE: 2.6,
+    BUG_APPROACH_DIST: 2.4,
+    BUG_ATTACK_COOLDOWN: 1.2,
+    COFFEE_HEAL: 25,
+    FOG_FLOOR: 0.15,
+    FOG_DIST: 16,
+    SIDE_SHADE: 0.75,
+    RAY_STEP: 0.05,
+  },
 };
 
 // Dometrain-flavored palette: dark navy + gold

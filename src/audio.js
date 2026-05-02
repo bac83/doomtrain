@@ -14,113 +14,59 @@ function getAudio() {
   return _audioCtx;
 }
 
+// One-shot SFX as data. Each entry:
+//   wave:     oscillator type
+//   f0:       start frequency
+//   f1:       end frequency (optional — omit for steady tone)
+//   ramp:     'exp' | 'lin' — frequency ramp curve
+//   g:        peak gain
+//   dur:      total duration (gain ramps to ~0 over this; oscillator stops here)
+//   freqDur:  freq-ramp duration (defaults to dur)
+const SFX_DEFS = {
+  shoot:        { wave: 'square',   f0: 220, f1: 40,  ramp: 'exp', g: 0.15, dur: 0.15, freqDur: 0.10 },
+  hit:          { wave: 'sawtooth', f0: 150, f1: 60,  ramp: 'exp', g: 0.12, dur: 0.12, freqDur: 0.08 },
+  kill:         { wave: 'triangle', f0: 440, f1: 80,  ramp: 'exp', g: 0.18, dur: 0.30 },
+  hurt:         { wave: 'square',   f0: 180, f1: 70,  ramp: 'exp', g: 0.20, dur: 0.20 },
+  pickup:       { wave: 'sine',     f0: 440, f1: 880, ramp: 'lin', g: 0.12, dur: 0.15, freqDur: 0.10 },
+  empty:        { wave: 'square',   f0: 80,                         g: 0.06, dur: 0.05 },
+  shootHammer:  { wave: 'square',   f0: 110, f1: 50,  ramp: 'exp', g: 0.18, dur: 0.08, freqDur: 0.06 },
+  merge:        { wave: 'sawtooth', f0: 420, f1: 120, ramp: 'exp', g: 0.10, dur: 0.20, freqDur: 0.18 },
+  door:         { wave: 'sine',     f0: 180, f1: 90,  ramp: 'lin', g: 0.10, dur: 0.40, freqDur: 0.35 },
+  switchWeapon: { wave: 'square',   f0: 330, f1: 440, ramp: 'lin', g: 0.08, dur: 0.08, freqDur: 0.06 },
+};
+
+function _playOneShot(ctx, t, def) {
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = def.wave;
+  o.frequency.setValueAtTime(def.f0, t);
+  if (def.f1 !== undefined) {
+    const fEnd = t + (def.freqDur ?? def.dur);
+    if (def.ramp === 'lin') o.frequency.linearRampToValueAtTime(def.f1, fEnd);
+    else o.frequency.exponentialRampToValueAtTime(def.f1, fEnd);
+  }
+  g.gain.setValueAtTime(def.g, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + def.dur);
+  o.start(t); o.stop(t + def.dur);
+}
+
 function sfx(type) {
   try {
     const ctx = getAudio();
     const t = ctx.currentTime;
 
     if (type === 'win') {
-      // Triumphant arpeggio
+      // Triumphant arpeggio — kept inline (4 staggered notes, not a one-shot).
       const notes = [261, 329, 392, 523]; // C, E, G, C
       for (let i = 0; i < notes.length; i++) {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.type = 'square';
-        o.frequency.setValueAtTime(notes[i], t + i * 0.15);
-        g.gain.setValueAtTime(0.12, t + i * 0.15);
-        g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.2);
-        o.start(t + i * 0.15);
-        o.stop(t + i * 0.15 + 0.2);
+        _playOneShot(ctx, t + i * 0.15, { wave: 'square', f0: notes[i], g: 0.12, dur: 0.20 });
       }
       return;
     }
 
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-
-    switch (type) {
-      case 'shoot':
-        o.type = 'square';
-        o.frequency.setValueAtTime(220, t);
-        o.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-        g.gain.setValueAtTime(0.15, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-        o.start(t); o.stop(t + 0.15);
-        break;
-      case 'hit':
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(150, t);
-        o.frequency.exponentialRampToValueAtTime(60, t + 0.08);
-        g.gain.setValueAtTime(0.12, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-        o.start(t); o.stop(t + 0.12);
-        break;
-      case 'kill':
-        o.type = 'triangle';
-        o.frequency.setValueAtTime(440, t);
-        o.frequency.exponentialRampToValueAtTime(80, t + 0.3);
-        g.gain.setValueAtTime(0.18, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        o.start(t); o.stop(t + 0.3);
-        break;
-      case 'hurt':
-        o.type = 'square';
-        o.frequency.setValueAtTime(180, t);
-        o.frequency.exponentialRampToValueAtTime(70, t + 0.2);
-        g.gain.setValueAtTime(0.2, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-        o.start(t); o.stop(t + 0.2);
-        break;
-      case 'pickup':
-        o.type = 'sine';
-        o.frequency.setValueAtTime(440, t);
-        o.frequency.linearRampToValueAtTime(880, t + 0.1);
-        g.gain.setValueAtTime(0.12, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-        o.start(t); o.stop(t + 0.15);
-        break;
-      case 'empty':
-        o.type = 'square';
-        o.frequency.setValueAtTime(80, t);
-        g.gain.setValueAtTime(0.06, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-        o.start(t); o.stop(t + 0.05);
-        break;
-      case 'shootHammer':
-        o.type = 'square';
-        o.frequency.setValueAtTime(110, t);
-        o.frequency.exponentialRampToValueAtTime(50, t + 0.06);
-        g.gain.setValueAtTime(0.18, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-        o.start(t); o.stop(t + 0.08);
-        break;
-      case 'merge':
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(420, t);
-        o.frequency.exponentialRampToValueAtTime(120, t + 0.18);
-        g.gain.setValueAtTime(0.10, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.20);
-        o.start(t); o.stop(t + 0.20);
-        break;
-      case 'door':
-        o.type = 'sine';
-        o.frequency.setValueAtTime(180, t);
-        o.frequency.linearRampToValueAtTime(90, t + 0.35);
-        g.gain.setValueAtTime(0.10, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.40);
-        o.start(t); o.stop(t + 0.40);
-        break;
-      case 'switchWeapon':
-        o.type = 'square';
-        o.frequency.setValueAtTime(330, t);
-        o.frequency.linearRampToValueAtTime(440, t + 0.06);
-        g.gain.setValueAtTime(0.08, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-        o.start(t); o.stop(t + 0.08);
-        break;
-    }
+    const def = SFX_DEFS[type];
+    if (def) _playOneShot(ctx, t, def);
   } catch (e) {
     // Silently ignore audio errors (e.g. before user gesture)
   }

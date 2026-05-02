@@ -32,16 +32,20 @@
 
   // ---- Level flow ----
 
+  function beginLevel(idx) {
+    loadLevel(idx);
+    Player.reset();
+    Entities.spawn();
+    gameState = 'playing';
+    canvas.requestPointerLock();
+  }
+
   function startRun() {
     totalKills = 0;
     totalCoffee = 0;
     Save.clear();
-    loadLevel(0);
-    Player.reset();
-    Entities.spawn();
     runStartTime = performance.now();
-    gameState = 'playing';
-    canvas.requestPointerLock();
+    beginLevel(0);
   }
 
   function continueRun() {
@@ -51,14 +55,6 @@
     totalCoffee = s.totalCoffee || 0;
     runStartTime = performance.now() - (s.runTimeMs || 0);
     beginLevel(s.nextIdx || 0);
-  }
-
-  function beginLevel(idx) {
-    loadLevel(idx);
-    Player.reset();
-    Entities.spawn();
-    gameState = 'playing';
-    canvas.requestPointerLock();
   }
 
   function completeLevel() {
