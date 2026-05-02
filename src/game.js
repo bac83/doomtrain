@@ -6,7 +6,7 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
-  // States: 'menu' | 'playing' | 'paused' | 'levelEnd' | 'won' | 'lost'
+  // States: 'menu' | 'playing' | 'paused' | 'boss' | 'levelEnd' | 'won' | 'lost'
   let gameState = 'menu';
 
   // Cumulative across levels for the final end-screen.
@@ -28,6 +28,7 @@
   const pauseScreen = document.getElementById('pauseScreen');
   const levelScreen = document.getElementById('levelScreen');
   const pauseBtn = document.getElementById('pauseBtn');
+  const bossScreen = document.getElementById('bossScreen');
 
   // ---- Level flow ----
 
@@ -140,6 +141,23 @@
     canvas.requestPointerLock();
   }
 
+  // ---- Boss key ----
+
+  function enterBossKey() {
+    if (gameState !== 'playing' && gameState !== 'paused') return;
+    if (Input.isMouseLocked()) Input.unlockMouse();
+    pauseScreen.style.display = 'none';
+    if (bossScreen) bossScreen.style.display = 'block';
+    gameState = 'boss';
+  }
+
+  function exitBossKeyToPause() {
+    if (gameState !== 'boss') return;
+    if (bossScreen) bossScreen.style.display = 'none';
+    gameState = 'paused';
+    pauseScreen.style.display = 'flex';
+  }
+
   // ---- Lose screen (built dynamically) ----
 
   let loseEl = null;
@@ -222,11 +240,18 @@
     startRun();
   });
 
-  // ESC toggles pause
+  // ESC toggles pause / exits boss key
   window.addEventListener('keydown', e => {
     if (e.code === 'Escape') {
-      if (gameState === 'playing') { e.preventDefault(); pauseGame(); }
+      if (gameState === 'boss') { e.preventDefault(); exitBossKeyToPause(); }
+      else if (gameState === 'playing') { e.preventDefault(); pauseGame(); }
       else if (gameState === 'paused') { e.preventDefault(); resumeGame(); }
+    }
+    if (e.code === 'KeyB') {
+      if (gameState === 'playing' || gameState === 'paused') {
+        e.preventDefault();
+        enterBossKey();
+      }
     }
     if (e.code === 'Tab') {
       e.preventDefault();
