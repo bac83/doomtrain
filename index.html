@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DOOMTRAIN — From Zero to Hero</title>
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="game" width="640" height="400"></canvas>
+</div>
+
+<div id="overlay">
+  <div id="title">DOOMTRAIN</div>
+  <div id="subtitle">From <span class="yellow">Zero</span> to <span class="yellow">Hero</span></div>
+
+  <div class="panel">
+    <h3>EPISODE 1: DEPENDENCY INJECTION DUNGEON</h3>
+    <p>The repository has been overrun by bugs and demons.<br>
+    Nick Chapsas needs your help to ship the next course.<br>
+    Clear the level. Find the exit. Keep coding.</p>
+  </div>
+
+  <div class="panel">
+    <h3>CONTROLS</h3>
+    <p>
+    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> &nbsp; Move<br>
+    <span class="key">←</span> <span class="key">→</span> &nbsp; Turn (or move mouse)<br>
+    <span class="key">SPACE</span> &nbsp; Fire Debugger<br>
+    <span class="key">SHIFT</span> &nbsp; Run<br>
+    <span class="key">ESC</span> &nbsp; Pause
+    </p>
+  </div>
+
+  <button id="startBtn">ENROLL NOW</button>
+</div>
+
+<div id="endScreen" style="display:none;">
+  <div id="endTitle">COURSE COMPLETED</div>
+  <div id="endSubtitle">You went from <span class="yellow">Zero</span> to <span class="yellow">Hero</span></div>
+  <div class="panel" style="text-align:center;">
+    <div class="stat">Bugs squashed: <span id="statKills">0</span></div>
+    <div class="stat">Coffee consumed: <span id="statCoffee">0</span></div>
+    <div class="stat">Time: <span id="statTime">0</span>s</div>
+  </div>
+  <div id="quote">Keep coding!</div>
+  <div id="attribution">— NICK CHAPSAS</div>
+  <button onclick="location.reload()" style="margin-top:24px;">TAKE NEXT COURSE</button>
+</div>
+
+<!-- Modules loaded in dependency order -->
+<script src="src/config.js"></script>
+<script src="src/map.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/sprites.js"></script>
+<script src="src/renderer.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/weapon.js"></script>
+<script src="src/entities.js"></script>
+<script src="src/player.js"></script>
+<script src="src/input.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>
