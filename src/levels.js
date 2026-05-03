@@ -39,6 +39,9 @@ let currentLevelIndex = 0;
 // Mutable globals consumed by other modules.
 let MAP, MAP_W, MAP_H, PLAYER_START;
 
+// Bumps on any map mutation (level load, door open). Read by minimap cache.
+let mapVersion = 0;
+
 function loadLevel(idx) {
   if (idx < 0 || idx >= Levels.length) return false;
   currentLevelIndex = idx;
@@ -48,6 +51,7 @@ function loadLevel(idx) {
   MAP_W = MAP[0].length;
   MAP_H = MAP.length;
   PLAYER_START = lvl.playerStart;
+  mapVersion++;
   return true;
 }
 
@@ -79,6 +83,7 @@ function openDoor(x, y) {
   if (x < 0 || x >= row.length) return false;
   if (row[x] !== 'D') return false;
   MAP[y] = row.slice(0, x) + '.' + row.slice(x + 1);
+  mapVersion++;
   return true;
 }
 

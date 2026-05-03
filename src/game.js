@@ -16,6 +16,21 @@
 
   let showMinimap = false;
 
+  // Boot-time required-globals check. Each module loads via <script> tag in
+  // index.html. If load order or filename breaks, fail loud here instead of
+  // letting downstream `typeof X !== 'undefined'` checks paper over it.
+  // Note: `const`/`let` at top level of classic <script> tags don't attach to
+  // window — use Function() to evaluate `typeof` in global scope.
+  const _exists = (name) => new Function(`return typeof ${name} !== 'undefined'`)();
+  const _required = ['CONFIG', 'PALETTE', 'MAP', 'Levels', 'Renderer', 'Sprites',
+                     'Textures', 'Weapon', 'Player', 'Entities', 'Input', 'HUD',
+                     'Save', 'Music'];
+  for (const name of _required) {
+    if (!_exists(name)) {
+      throw new Error(`Module '${name}' not loaded — check index.html script tags`);
+    }
+  }
+
   Renderer.init();
   Entities.spawn();
   Input.init(canvas, () => {
@@ -264,6 +279,35 @@
 
   // ---- Loop ----
 
+  // Minimap static-layer cache: walls + bg + border. Only redrawn when
+  // _miniLevelKey changes (level swap). Entities + player drawn live on top.
+  let _miniCanvas = null, _miniLevelKey = null;
+  function _buildMiniStatic(px, w, h) {
+    const c = document.createElement('canvas');
+    c.width = w + 6; c.height = h + 6;
+    const cx = c.getContext('2d');
+    cx.fillStyle = 'rgba(10, 14, 26, 0.85)';
+    cx.fillRect(0, 0, w + 6, h + 6);
+    cx.strokeStyle = '#f5b800';
+    cx.lineWidth = 2;
+    cx.strokeRect(0, 0, w + 6, h + 6);
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const ch = mapAt(x, y);
+        let col = null;
+        if (ch === '1') col = '#f5b800';
+        else if (ch === '2') col = '#9966cc';
+        else if (ch === 'E') col = '#3cdc64';
+        else if (ch === 'D') col = '#a07030';
+        if (col) {
+          cx.fillStyle = col;
+          cx.fillRect(3 + x * px, 3 + y * px, px, px);
+        }
+      }
+    }
+    return c;
+  }
+
   function drawMinimap(ctx) {
     const S = CONFIG.SCREEN_W / 640;
     const px = Math.max(4, Math.round(5 * S));
@@ -272,26 +316,12 @@
     const ox = CONFIG.SCREEN_W - w - Math.round(12 * S);
     const oy = Math.round(12 * S);
 
-    ctx.fillStyle = 'rgba(10, 14, 26, 0.85)';
-    ctx.fillRect(ox - 3, oy - 3, w + 6, h + 6);
-    ctx.strokeStyle = '#f5b800';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(ox - 3, oy - 3, w + 6, h + 6);
-
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
-        const c = mapAt(x, y);
-        let col = null;
-        if (c === '1') col = '#f5b800';
-        else if (c === '2') col = '#9966cc';
-        else if (c === 'E') col = '#3cdc64';
-        else if (c === 'D') col = '#a07030';
-        if (col) {
-          ctx.fillStyle = col;
-          ctx.fillRect(ox + x * px, oy + y * px, px, px);
-        }
-      }
+    const levelKey = `${mapVersion}:${px}`;
+    if (_miniLevelKey !== levelKey || !_miniCanvas) {
+      _miniCanvas = _buildMiniStatic(px, w, h);
+      _miniLevelKey = levelKey;
     }
+    ctx.drawImage(_miniCanvas, ox - 3, oy - 3);
 
     for (const e of Entities.list) {
       if (!e.alive) continue;

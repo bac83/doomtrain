@@ -18,12 +18,13 @@ const Input = (() => {
   let leftTouchId = null, leftStartX = 0, leftStartY = 0, leftCurX = 0, leftCurY = 0;
   let rightTouchId = null, rightLastX = 0, rightStartX = 0, rightStartY = 0, rightStartTime = 0, rightMoved = false;
 
-  function clearJoystickKeys() {
-    keys['KeyW'] = false;
-    keys['KeyA'] = false;
-    keys['KeyS'] = false;
-    keys['KeyD'] = false;
-  }
+  // Continuous joystick vector. fwd: forward (+) / backward (-). strafe: right (+) / left (-).
+  // Both clamped to -1..1. Player.update reads via getMoveVector().
+  const moveVec = { fwd: 0, strafe: 0 };
+
+  // Joystick scale: pixels of drag for full-magnitude move (after deadzone).
+  const JOY_DEAD = 12;
+  const JOY_MAX = 60;
 
   function init(canvasEl, shootCallback) {
     canvas = canvasEl;
@@ -95,15 +96,14 @@ const Input = (() => {
         leftCurX = p.x; leftCurY = p.y;
         const dx = p.x - leftStartX;
         const dy = p.y - leftStartY;
-        const dead = 12;
-        clearJoystickKeys();
-        if (Math.abs(dx) < dead && Math.abs(dy) < dead) continue;
-        const ang = Math.atan2(dy, dx);
-        // 8-way map (W=up, S=down, A=left, D=right)
-        if (ang > -2.75 && ang < -0.39) keys['KeyW'] = true;
-        if (ang > 0.39 && ang < 2.75)   keys['KeyS'] = true;
-        if (ang > -1.18 && ang < 1.18)  keys['KeyD'] = true;
-        if (ang > 1.96 || ang < -1.96)  keys['KeyA'] = true;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len < JOY_DEAD) {
+          moveVec.fwd = 0; moveVec.strafe = 0;
+        } else {
+          const m = Math.min(1, (len - JOY_DEAD) / (JOY_MAX - JOY_DEAD));
+          moveVec.fwd    = -dy / len * m;  // up on screen = forward
+          moveVec.strafe =  dx / len * m;
+        }
       } else if (t.identifier === rightTouchId) {
         const dx = p.x - rightLastX;
         rightLastX = p.x;
@@ -118,7 +118,7 @@ const Input = (() => {
     for (const t of e.changedTouches) {
       if (t.identifier === leftTouchId) {
         leftTouchId = null;
-        clearJoystickKeys();
+        moveVec.fwd = 0; moveVec.strafe = 0;
       } else if (t.identifier === rightTouchId) {
         const dt = performance.now() - rightStartTime;
         if (!rightMoved && dt < 250) onShoot();
@@ -136,5 +136,10 @@ const Input = (() => {
     return { startX: leftStartX, startY: leftStartY, curX: leftCurX, curY: leftCurY };
   }
 
-  return { keys, init, isMouseLocked, unlockMouse, getJoystick };
+  function getMoveVector() {
+    if (leftTouchId === null) return null;
+    return moveVec;
+  }
+
+  return { keys, init, isMouseLocked, unlockMouse, getJoystick, getMoveVector };
 })();

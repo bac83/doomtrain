@@ -55,13 +55,9 @@ const HUD = (() => {
     // Portrait
     drawPortrait(ctx, sx(490), yMid + sx(8), player, S);
 
-    // Right: weapon + episode
-    const weaponName = (typeof Weapon !== 'undefined' && Weapon.list[player.currentWeapon])
-      ? Weapon.list[player.currentWeapon].name
-      : 'PISTOL';
-    const levelId = (typeof getCurrentLevel === 'function')
-      ? getCurrentLevel().id.toUpperCase()
-      : 'E1M1';
+    // Right: weapon + episode (Weapon + getCurrentLevel guaranteed by boot assert).
+    const weaponName = Weapon.list[player.currentWeapon].name;
+    const levelId = getCurrentLevel().id.toUpperCase();
 
     ctx.font = fnt(14);
     ctx.fillStyle = '#f5b800';

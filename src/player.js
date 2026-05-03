@@ -51,6 +51,13 @@ const Player = (() => {
     if (keys['KeyA']) { mvX += Math.cos(state.dir - Math.PI/2); mvY += Math.sin(state.dir - Math.PI/2); }
     if (keys['KeyD']) { mvX += Math.cos(state.dir + Math.PI/2); mvY += Math.sin(state.dir + Math.PI/2); }
 
+    // Touch joystick — continuous-magnitude version of WASD.
+    const tv = Input.getMoveVector();
+    if (tv) {
+      mvX += Math.cos(state.dir) * tv.fwd + Math.cos(state.dir + Math.PI/2) * tv.strafe;
+      mvY += Math.sin(state.dir) * tv.fwd + Math.sin(state.dir + Math.PI/2) * tv.strafe;
+    }
+
     if (keys['ArrowLeft'])  state.dir -= state.rotSpeed * dt;
     if (keys['ArrowRight']) state.dir += state.rotSpeed * dt;
 
