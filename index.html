@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DOOMTRAIN — From Zero to Hero</title>
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="game" width="1280" height="800"></canvas>
+</div>
+
+<button id="pauseBtn" aria-label="Pause">II</button>
+
+<div id="overlay">
+  <div id="title">DOOMTRAIN</div>
+  <div id="subtitle">From <span class="yellow">Zero</span> to <span class="yellow">Hero</span></div>
+
+  <div class="panel">
+    <h3>EPISODE 1: DEPENDENCY INJECTION DUNGEON</h3>
+    <p>The repository has been overrun by bugs and demons.<br>
+    Nick Chapsas needs your help to ship the next course.<br>
+    Clear the level. Find the exit. Keep coding.</p>
+  </div>
+
+  <div class="panel">
+    <h3>CONTROLS</h3>
+    <p>
+    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> &nbsp; Move<br>
+    <span class="key">←</span> <span class="key">→</span> &nbsp; Turn (or move mouse)<br>
+    <span class="key">SPACE</span> &nbsp; Fire weapon<br>
+    <span class="key">1</span> <span class="key">2</span> &nbsp; Switch weapon (Pistol / Hammer)<br>
+    <span class="key">SHIFT</span> &nbsp; Run<br>
+    <span class="key">TAB</span> &nbsp; Toggle minimap<br>
+    <span class="key">ESC</span> &nbsp; Pause<br>
+    <span style="color:#aaa;font-size:12px;">Mobile: left half = move, right half = look (drag) / fire (tap)</span>
+    </p>
+  </div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+    <button id="startBtn">ENROLL NOW</button>
+    <button id="continueBtn" style="display:none;background:#3cdc64;">CONTINUE COURSE</button>
+  </div>
+</div>
+
+<div id="bossScreen" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;">
+  <img src="src/assets/dometrain.png" alt=""
+       style="width:100%;height:100%;object-fit:contain;display:block;background:#fff;">
+</div>
+
+<div id="pauseScreen" style="display:none;">
+  <div id="pauseTitle">PAUSED</div>
+  <div class="panel" style="text-align:center;">
+    <p>Class is in session.<br>Click resume to keep coding.</p>
+  </div>
+  <button id="resumeBtn">RESUME</button>
+</div>
+
+<div id="levelScreen" style="display:none;">
+  <div id="levelTitle">LEVEL COMPLETE</div>
+  <div class="panel" style="text-align:center;">
+    <div class="stat">Bugs squashed: <span id="lvlKills">0</span></div>
+    <div class="stat">Coffee consumed: <span id="lvlCoffee">0</span></div>
+    <div class="stat">Next: <span id="lvlNextName" class="yellow">—</span></div>
+  </div>
+  <button id="nextLevelBtn">CONTINUE</button>
+</div>
+
+<div id="endScreen" style="display:none;">
+  <div id="endTitle">COURSE COMPLETED</div>
+  <div id="endSubtitle">You went from <span class="yellow">Zero</span> to <span class="yellow">Hero</span></div>
+  <div class="panel" style="text-align:center;">
+    <div class="stat">Bugs squashed: <span id="statKills">0</span></div>
+    <div class="stat">Coffee consumed: <span id="statCoffee">0</span></div>
+    <div class="stat">Time: <span id="statTime">0</span>s</div>
+  </div>
+  <div id="quote">Keep coding!</div>
+  <div id="attribution">— NICK CHAPSAS</div>
+  <button id="endRestartBtn" style="margin-top:24px;">TAKE NEXT COURSE</button>
+</div>
+
+<!-- Modules loaded in dependency order -->
+<script src="src/config.js?v=12"></script>
+<script src="src/save.js?v=12"></script>
+<script src="src/map.js?v=12"></script>
+<script src="src/map_e1m2.js?v=12"></script>
+<script src="src/map_e1m3.js?v=12"></script>
+<script src="src/levels.js?v=12"></script>
+<script src="src/audio.js?v=12"></script>
+<script src="src/sprites.js?v=12"></script>
+<script src="src/textures.js?v=12"></script>
+<script src="src/renderer.js?v=12"></script>
+<script src="src/weapon.js?v=12"></script>
+<script src="src/hud.js?v=12"></script>
+<script src="src/entities.js?v=12"></script>
+<script src="src/player.js?v=12"></script>
+<script src="src/input.js?v=12"></script>
+<script src="src/game.js?v=12"></script>
+</body>
+</html>
